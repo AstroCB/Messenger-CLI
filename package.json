@@ -1,13 +1,13 @@
 {
-  "name": "test",
+  "name": "Messenger-CLI",
   "version": "1.0.0",
-  "description": "",
+  "description": "A command-line interface for Facebook Messenger.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Cameron Bernhardt (AstroCB)",
+  "license": "MIT",
   "dependencies": {
     "facebook-chat-api": "^1.4.0"
   }
