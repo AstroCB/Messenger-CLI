@@ -1,8 +1,11 @@
+// Dependencies
 const login = require("facebook-chat-api");
 const fs = require("fs");
 const readline = require("readline");
+// Internal colors module for Terminal output'
 const colored = require("./colors").colorString;
-let gapi, last;
+// Global access variables
+let gapi, last, rl;
 
 try {
 	// Look for stored appstate first
@@ -15,7 +18,7 @@ try {
 		logInWithCredentials(credentials);
 	} catch (e) {
 		// If none found, ask for them
-		let rl = initPrompt();
+		initPrompt();
 		rl.question("What's your Facebook email? ", (email) => {
 			rl.question("What's your Facebook password? ", (pass) => {
 				// Store credentials for next time
@@ -50,12 +53,14 @@ function logInWithCredentials(credentials, callback = main) {
 	Returns the readline interface.
 */
 function initPrompt() {
-	const rl = readline.createInterface({
-		"input": process.stdin,
-		"output": process.stdout
-	});
-	rl.setPrompt("> ");
-	return rl;
+	if (!rl) {
+		let rlInterface = readline.createInterface({
+			"input": process.stdin,
+			"output": process.stdout
+		});
+		rlInterface.setPrompt("> ");
+		rl = rlInterface;
+	}
 }
 
 /*
@@ -71,14 +76,21 @@ function main(api) {
 	gapi = api;
 
 	// Set up the prompt for sending new messages
-	let rl = initPrompt();
+	initPrompt();
 	rl.prompt();
 
 	// Listen to the stream of incoming messages and log them as they arrive
 	api.listen((err, msg) => {
 		api.getThreadInfo(msg.threadID, (err, tinfo) => {
 			api.getUserInfo(msg.senderID, (err, uinfo) => {
+				// Clear the line (prompt will be in front otherwise)
+				readline.clearLine(process.stdout);
+				readline.cursorTo(process.stdout, 0);
+
+				// Log the incoming message
 				console.log(`${colored(uinfo[msg.senderID].firstName, "fgblue")} in ${colored(tinfo.name, "fggreen")} ${msg.body}`);
+
+				// Replace the prompt
 				rl.prompt();
 			});
 		});
@@ -90,11 +102,11 @@ function main(api) {
 		if (terminator == -1) {
 			// No recipient specified: send it to the last one messaged if available; otherwise, cancel
 			if (last) {
-				api.sendMessage(line, last.threadId, (err) => {
-					if (!err) { console.log(colored("sent", "bggreen")); } else { logError("(not sent)"); }
-				});
+				const msg = parseAndReplace(line, last);
+				sendMessage(msg, last.threadID, rl);
 			} else {
 				logError("No prior recipient found");
+				rl.prompt();
 			}
 		} else {
 			// Search for the group specified in the message
@@ -102,18 +114,11 @@ function main(api) {
 			getGroup(search, (err, group) => {
 				if (!err) {
 					// Send message to matched group
-					api.sendMessage(line.substring(terminator + 1), group.threadID, (err) => {
-						if (!err) { console.log(colored("(sent)", "bggreen")); } else { logError("(not sent)"); }
-					});
-					let name = group.name;
-					api.getThreadInfo(group, (err, info) => {
-						console.log(info);
-					})
+					const msg = parseAndReplace(line.substring(terminator + 1), group);
+					sendMessage(msg, group.threadID, rl);
+
 					// Store the information of the last recipient so you don't have to specify it again
-					last = {
-						"threadId": group.threadID,
-						"name": group.name || "PM"
-					};
+					last = group;
 
 					// Update the prompt to indicate where messages are being sent by default
 					rl.setPrompt(colored(`[${last.name}] `, "fggreen"));
@@ -122,8 +127,29 @@ function main(api) {
 				}
 			});
 		}
-		// Prompt for next entry after every message
+	});
+}
+
+/*
+	Wrapper function for api.sendMessage that provides colored status prompts
+	that indicate whether the message was sent properly.
+
+	Provide a message, a threadId to send it to, and a readline interface to use
+	for the status messages.
+*/
+function sendMessage(msg, threadId, rl, callback = () => { }, api = gapi) {
+	api.sendMessage(msg, threadId, (err) => {
+		if (!err) {
+			console.log(colored("(sent)", "bggreen"));
+		} else {
+			logError("(not sent)");
+		}
+
+		// Prompt after message sends
 		rl.prompt();
+
+		// Optional callback
+		callback(err);
 	});
 }
 
@@ -135,26 +161,24 @@ function logError(err) {
 }
 
 /*
-	Takes a search query (`search`) and looks for a thread with a matching name in
+	Takes a search query (`query`) and looks for a thread with a matching name in
 	the user's past 20 threads.
 
 	Passes either an Error object or null and a Thread object matching the search
 	to the specified callback.
 */
-function getGroup(search, callback, api = gapi) {
-	search = search.toLowerCase();
-	api.getThreadList(0, 20, "inbox", (err, threads) => {
+function getGroup(query, callback, api = gapi) {
+	const search = new RegExp(query, "i"); // Case insensitive
+	api.getThreadList(0, 10, "inbox", (err, threads) => {
 		if (!err) {
 			let found = false;
 			for (let i = 0; i < threads.length; i++) {
-				isCanonicalMatch(threads[i], search, (yes) => {
-					const name = threads[i].name.toLowerCase();
-					if (name.search(search) > -1 || yes) {
-						if (!found) {
-							callback(null, threads[i]);
-							found = true;
-							return;
-						}
+				const id = threads[i].threadID;
+				api.getThreadInfo(id, (err, info) => {
+					if (!found && !err && info.name.search(search) > -1) {
+						info.threadID = id;
+						callback(null, info);
+						found = true;
 					}
 				});
 			}
@@ -165,26 +189,27 @@ function getGroup(search, callback, api = gapi) {
 }
 
 /*
-	Utility function that determines whether the passed `thread` object is both
-	canonical (a one-on-one conversation) and whether the person that the thread
-	is with (the other person in the conversation) matches the given `search` term.
+	Replaces special characters/commands in the given message with the info
+	needed to send to Messenger.
 
-	Passes a boolean to the callback indicating whether this match was found in hte
-	provided thread.
+	Takes a message and a groupInfo object to get the replacement data from.
+
+	Returns the fixed string (which can be sent directly with sendMessage).
 */
-function isCanonicalMatch(thread, search, callback, api = gapi) {
-	if (thread.isCanonical) {
-		const users = thread.participantIDs;
-		for (let i = 0; i < users.length; i++) {
-			const cur = users[i];
-			if (cur != api.getCurrentUserID()) {
-				api.getUserInfo(cur, (err, info) => {
-					if (info && info[cur].name.toLowerCase().search(search) > -1) {
-						callback(true);
-					}
-				});
-			}
+function parseAndReplace(msg, groupInfo) {
+	let fixed = msg;
+
+	const fixes = [
+		{
+			// {emoji} -> group emoji
+			"match": /{emoji}/i,
+			"replacement": groupInfo.emoji ? groupInfo.emoji.emoji : "👍"
 		}
+	]
+
+	for (let i = 0; i < fixes.length; i++) {
+		fixed = fixed.replace(fixes[i].match, fixes[i].replacement);
 	}
-	callback(false);
+
+	return fixed;
 }
