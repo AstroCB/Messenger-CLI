@@ -202,7 +202,7 @@ function parseAndReplace(msg, groupInfo) {
 	const fixes = [
 		{
 			// {emoji} -> group emoji
-			"match": /{emoji}/i,
+			"match": /{emoji}/ig,
 			"replacement": groupInfo.emoji ? groupInfo.emoji.emoji : "👍"
 		}
 	]
