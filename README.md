@@ -23,4 +23,9 @@ MCLI will search your 20 most recent threads (configurable) for a chat name (for
 To send a message to someone else, simply specify a new recipient using the same syntax shown above.
 
 ## Special commands
-Currently, the only special command is `{emoji}`, which will be replaced with the group emoji for the thread it is sent to in any messages containing it. More commands are on the way.
+Below are a list of commands that, when included in messages, will not appear in the final text sent to the recipient, but will influence the behavior of the chat in some way.
+
+| **Command** |                                                    **Description**                                                    |
+|:-----------:|:---------------------------------------------------------------------------------------------------------------------:|
+| `{emoji}`   | Wherever this command appears in the text, it will be replaced by the emoji for the recipient thread (👍 by default). |
+| `{read}`    | This will send a read receipt to the recipient thread, marking that you've read its latest message.                   |

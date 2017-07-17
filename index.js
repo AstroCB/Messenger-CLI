@@ -5,7 +5,7 @@ const readline = require("readline");
 // Internal colors module for Terminal output'
 const colored = require("./colors").colorString;
 // Global access variables
-let gapi, last, rl;
+let gapi, active, rl;
 
 try {
 	// Look for stored appstate first
@@ -81,19 +81,18 @@ function main(api) {
 
 	// Listen to the stream of incoming messages and log them as they arrive
 	api.listen((err, msg) => {
-		api.getThreadInfo(msg.threadID, (err, tinfo) => {
-			api.getUserInfo(msg.senderID, (err, uinfo) => {
-				// Clear the line (prompt will be in front otherwise)
-				readline.clearLine(process.stdout);
-				readline.cursorTo(process.stdout, 0);
+		if(msg.type == "message") {
+			api.getThreadInfo(msg.threadID, (err, tinfo) => {
+				api.getUserInfo(msg.senderID, (err, uinfo) => {
+					// If there are attachments, grab their URLs to render them as text instead
+					const atts = msg.attachments.map((a) => { return a.url; }).filter((a) => { return a; });
+					const text = atts.length > 0 ? `${msg.body} [${atts.join(", ")}]` : msg.body;
 
-				// Log the incoming message
-				console.log(`${colored(uinfo[msg.senderID].firstName, "fgblue")} in ${colored(tinfo.name, "fggreen")} ${msg.body}`);
-
-				// Replace the prompt
-				rl.prompt();
+					// Log the incoming message and reset the prompt
+					newPrompt(`${colored(uinfo[msg.senderID].firstName, "fgblue")} in ${colored(tinfo.name, "fggreen")} ${text}`, rl);
+				});
 			});
-		});
+		}
 	});
 
 	// Watch stdin for new messages (terminated by newlines)
@@ -101,9 +100,8 @@ function main(api) {
 		const terminator = line.indexOf(":");
 		if (terminator == -1) {
 			// No recipient specified: send it to the last one messaged if available; otherwise, cancel
-			if (last) {
-				const msg = parseAndReplace(line, last);
-				sendMessage(msg, last.threadID, rl);
+			if (active) {
+				sendReplacedMessage(line, active, rl);
 			} else {
 				logError("No prior recipient found");
 				rl.prompt();
@@ -114,14 +112,13 @@ function main(api) {
 			getGroup(search, (err, group) => {
 				if (!err) {
 					// Send message to matched group
-					const msg = parseAndReplace(line.substring(terminator + 1), group);
-					sendMessage(msg, group.threadID, rl);
+					sendReplacedMessage(line.substring(terminator + 1), group, rl);
 
 					// Store the information of the last recipient so you don't have to specify it again
-					last = group;
+					active = group;
 
 					// Update the prompt to indicate where messages are being sent by default
-					rl.setPrompt(colored(`[${last.name}] `, "fggreen"));
+					rl.setPrompt(colored(`[${active.name}] `, "fggreen"));
 				} else {
 					logError(err);
 				}
@@ -140,13 +137,10 @@ function main(api) {
 function sendMessage(msg, threadId, rl, callback = () => { }, api = gapi) {
 	api.sendMessage(msg, threadId, (err) => {
 		if (!err) {
-			console.log(colored("(sent)", "bggreen"));
+			newPrompt(colored("(sent)", "bggreen"), rl);
 		} else {
 			logError("(not sent)");
 		}
-
-		// Prompt after message sends
-		rl.prompt();
 
 		// Optional callback
 		callback(err);
@@ -189,6 +183,21 @@ function getGroup(query, callback, api = gapi) {
 }
 
 /*
+	Runs the specified message through a filterer to execute
+	any special commands/replacements before sending the message.
+
+	Takes a message to parse, a groupInfo object, and a readline Instance.
+*/
+function sendReplacedMessage(message, groupInfo, rl) {
+	const msg = parseAndReplace(message, groupInfo);
+
+	// parseAndReplace may return an empty message after replacement
+	if (msg) {
+		sendMessage(msg, groupInfo.threadID, rl); 
+	}
+}
+
+/*
 	Replaces special characters/commands in the given message with the info
 	needed to send to Messenger.
 
@@ -196,20 +205,59 @@ function getGroup(query, callback, api = gapi) {
 
 	Returns the fixed string (which can be sent directly with sendMessage).
 */
-function parseAndReplace(msg, groupInfo) {
+function parseAndReplace(msg, groupInfo, api = gapi) {
 	let fixed = msg;
 
+	/*
+ 		List of fixes to make.
+
+		Each fix should contain "match" and "replacement" fields to perform the replacement,
+		and optionally can contain a "func" field containing a function to be called if a match
+		is found. The groupInfo object and api instance will be passed to the function.
+	*/
 	const fixes = [
 		{
 			// {emoji} -> group emoji
 			"match": /{emoji}/ig,
 			"replacement": groupInfo.emoji ? groupInfo.emoji.emoji : "👍"
+		},
+		{
+			// {read} -> ""; send read receipt
+			"match": /{read}/i,
+			"replacement": "",
+			"func": (groupInfo, api) => {
+				api.markAsRead(groupInfo.threadID, (err) => {
+					if(!err) { newPrompt(colored("(read)", "bgblue"), rl); }
+				});
+			}
 		}
 	]
 
 	for (let i = 0; i < fixes.length; i++) {
-		fixed = fixed.replace(fixes[i].match, fixes[i].replacement);
+		// Look for a match; if found, call the function if it exists
+		let fix = fixes[i];
+		if(fixed.search(fix.match) > -1 && fix.func) {
+			fix.func(groupInfo, api);
+		}
+		fixed = fixed.replace(fix.match, fix.replacement);
 	}
 
-	return fixed;
+	return fixed.trim();
 }
+
+/*
+	Clears the line of an existing prompt, logs the passed message, and then replaces the
+	prompt for further messages.
+*/
+function newPrompt(msg, rl) {
+	// Clear the line (prompt will be in front otherwise)
+	readline.clearLine(process.stdout);
+	readline.cursorTo(process.stdout, 0);
+
+	// Log the message
+	console.log(msg);
+
+	// Replace the prompt
+	rl.prompt();
+}
+
