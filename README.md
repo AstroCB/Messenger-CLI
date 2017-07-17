@@ -2,7 +2,7 @@
 
 Messenger-CLI provides a way to access Facebook Messenger from the command line. You can send and receive messages in both group chats and direct messages.
 
-It was written using [Node.js](http://nodejs.org) and [Facebook Chat API](https://github.com/Schmavery/facebook-chat-api).
+It was written using [Node.js](https://nodejs.org) and [Facebook Chat API](https://github.com/Schmavery/facebook-chat-api).
 
 ## Installation
 Clone this repo and run `npm start` in the directory – you will be guided through logging into Messenger from there. If you enter the wrong email or password, you can delete `credentials.js` to start the sign-in process again.
