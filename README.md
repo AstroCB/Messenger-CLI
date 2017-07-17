@@ -18,9 +18,9 @@ For the first message you send, you will have to explicitly specify the recipien
 > Recipient: message to send
 ```
 
-MCLI will search your 20 most recent threads (configurable) for a chat name (for group chats) or a user name (for one-on-one chats) that matches `Recipient`. After the first message is sent, you can simply continue to type new messages and they will be sent to the last recipient specified.
+MCLI will search your 20 most recent threads (configurable) for a chat name (for group chats) or a person's name (for one-on-one chats) that matches `Recipient`. After the first message is sent, you can simply continue to type new messages and they will be sent to the last recipient specified.
 
-To send a message to someone else, simply specify a new recipient the same way shown above.
+To send a message to someone else, simply specify a new recipient using the same syntax shown above.
 
 ## Special commands
 Currently, the only special command is `{emoji}`, which will be replaced with the group emoji for the thread it is sent to in any messages containing it. More commands are on the way.
