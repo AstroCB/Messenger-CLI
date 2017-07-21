@@ -213,7 +213,7 @@ function parseAndReplace(msg, groupInfo, api = gapi) {
 
 		Each fix should contain "match" and "replacement" fields to perform the replacement,
 		and optionally can contain a "func" field containing a function to be called if a match
-		is found. The groupInfo object and api instance will be passed to the function.
+		is found. The groupInfo object, api instance, and match data will be passed to the function.
 	*/
 	const fixes = [
 		{
@@ -232,7 +232,7 @@ function parseAndReplace(msg, groupInfo, api = gapi) {
 			}
 		},
 		{
-			// {bigemoji} -> large group emoji
+			// {bigemoji} -> send large group emoji
 			"match": /{bigemoji}/i,
 			"replacement": "",
 			"func": (groupInfo, api) => {
@@ -243,14 +243,31 @@ function parseAndReplace(msg, groupInfo, api = gapi) {
 					if(!err) { newPrompt(colored("(emoji)", "bgyellow"), rl); }
 				});
 			}
+		},
+		{
+			// {file|path/to/file} -> send file
+			"match": /{file\|([^}]+)}/i,
+			"replacement": "",
+			"func": (groupInfo, api, match) => {
+				const path = `${__dirname}/${match[1]}`;
+				api.sendMessage({
+					"attachment": fs.createReadStream(path)
+				}, groupInfo.threadID, (err) => {
+					if (!err) {
+						newPrompt(colored("(image)", "bgcyan"), rl);
+					} else {
+						logError(`File not found at path ${path}`);
+					}
+				});
+			}
 		}
 	]
 
 	for (let i = 0; i < fixes.length; i++) {
 		// Look for a match; if found, call the function if it exists
 		let fix = fixes[i];
-		if(fixed.search(fix.match) > -1 && fix.func) {
-			fix.func(groupInfo, api);
+		if(msg.search(fix.match) > -1 && fix.func) {
+			fix.func(groupInfo, api, msg.match(fix.match));
 		}
 		fixed = fixed.replace(fix.match, fix.replacement);
 	}
