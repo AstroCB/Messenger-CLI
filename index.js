@@ -230,6 +230,19 @@ function parseAndReplace(msg, groupInfo, api = gapi) {
 					if(!err) { newPrompt(colored("(read)", "bgblue"), rl); }
 				});
 			}
+		},
+		{
+			// {bigemoji} -> large group emoji
+			"match": /{bigemoji}/i,
+			"replacement": "",
+			"func": (groupInfo, api) => {
+				api.sendMessage({
+					"emoji": groupInfo.emoji ? groupInfo.emoji.emoji : "👍 ",
+					"emojiSize": "large"
+				}, groupInfo.threadID, (err) => {
+					if(!err) { newPrompt(colored("(emoji)", "bgyellow"), rl); }
+				});
+			}
 		}
 	]
 

@@ -27,5 +27,6 @@ Below are a list of commands that, when included in messages, will not appear in
 
 | **Command** |                                                    **Description**                                                    |
 |:-----------:|:---------------------------------------------------------------------------------------------------------------------:|
-| `{emoji}`   | Wherever this command appears in the text, it will be replaced by the emoji for the recipient thread (👍 by default). |
 | `{read}`    | This will send a read receipt to the recipient thread, marking that you've read its latest message.                   |
+| `{emoji}`   | Wherever this command appears in the text, it will be replaced by the emoji for the recipient thread (👍 by default). |
+| `{bigemoji}`| This will send a large version of the group emoji to the chat.                                                        |
