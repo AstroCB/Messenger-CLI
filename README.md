@@ -25,9 +25,9 @@ To send a message to someone else, simply specify a new recipient using the same
 ## Special commands
 Below are a list of commands that, when included in messages, will not appear in the final text sent to the recipient, but will influence the behavior of the chat in some way.
 
-|      **Command**       |                                                    **Description**                                                    |
-|:----------------------:|:---------------------------------------------------------------------------------------------------------------------:|
-| `{read}`               | This command will send a read receipt to the recipient thread, marking that you've read its latest message.           |
-| `{emoji}`              | Wherever this command appears in the text, it will be replaced by the emoji for the recipient thread (👍 by default). |
-| `{bigemoji}`           | This command will send a large version of the group emoji to the chat.                                                |
-| `{file\|path/to/file}` | This command will send the file located at path/to/file, relative to the CLI's directory.                             |
+|       **Command**       |                                                    **Description**                                                    |
+|:-----------------------:|:---------------------------------------------------------------------------------------------------------------------:|
+| `{read}`                | This command will send a read receipt to the recipient thread, marking that you've read its latest message.           |
+| `{emoji}`               | Wherever this command appears in the text, it will be replaced by the emoji for the recipient thread (👍 by default). |
+| `{bigemoji}`            | This command will send a large version of the group emoji to the chat.                                                |
+| `{file\|/path/to/file}` | This command will send the file located at the absolute path `/path/to/file`.                                         |

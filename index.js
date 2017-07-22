@@ -249,7 +249,7 @@ function parseAndReplace(msg, groupInfo, api = gapi) {
 			"match": /{file\|([^}]+)}/i,
 			"replacement": "",
 			"func": (groupInfo, api, match) => {
-				const path = `${__dirname}/${match[1]}`;
+				const path = match[1];
 				api.sendMessage({
 					"attachment": fs.createReadStream(path)
 				}, groupInfo.threadID, (err) => {
@@ -269,6 +269,7 @@ function parseAndReplace(msg, groupInfo, api = gapi) {
 		if(msg.search(fix.match) > -1 && fix.func) {
 			fix.func(groupInfo, api, msg.match(fix.match));
 		}
+		// Make the replacements as necessary
 		fixed = fixed.replace(fix.match, fix.replacement);
 	}
 
