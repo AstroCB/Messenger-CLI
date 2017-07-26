@@ -85,7 +85,7 @@ function main(api) {
 			api.getThreadInfo(msg.threadID, (err, tinfo) => {
 				api.getUserInfo(msg.senderID, (err, uinfo) => {
 					// If there are attachments, grab their URLs to render them as text instead
-					const atts = msg.attachments.map((a) => { return a.url; }).filter((a) => { return a; });
+					const atts = msg.attachments.map((a) => { return a.url || a.facebookUrl; }).filter((a) => { return a; });
 					const text = atts.length > 0 ? `${msg.body} [${atts.join(", ")}]` : msg.body;
 
 					// Log the incoming message and reset the prompt
