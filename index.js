@@ -71,7 +71,7 @@ function initPrompt() {
 */
 function main(api) {
 	// Use minimal logging from the API
-	api.setOptions({ "logLevel": "warn" });
+	api.setOptions({ "logLevel": "warn", "listenEvents": true });
 	// Initialize the global API object
 	gapi = api;
 
@@ -81,16 +81,21 @@ function main(api) {
 
 	// Listen to the stream of incoming messages and log them as they arrive
 	api.listen((err, msg) => {
-		if(msg.type == "message") {
+		if(msg.type == "message") { // Message received
 			api.getThreadInfo(msg.threadID, (err, tinfo) => {
 				api.getUserInfo(msg.senderID, (err, uinfo) => {
 					// If there are attachments, grab their URLs to render them as text instead
 					const atts = msg.attachments.map((a) => { return a.url || a.facebookUrl; }).filter((a) => { return a; });
-					const text = atts.length > 0 ? `${msg.body} [${atts.join(", ")}]` : msg.body;
+					const atext = atts.length > 0 ? `${msg.body} [${atts.join(", ")}]` : msg.body;
 
 					// Log the incoming message and reset the prompt
-					newPrompt(`${colored(uinfo[msg.senderID].firstName, "fgblue")} in ${colored(tinfo.name, "fggreen")} ${text}`, rl);
+					newPrompt(`${colored(uinfo[msg.senderID].firstName, "fgblue")} in ${colored(tinfo.name, "fggreen")} ${atext}`, rl);
 				});
+			});
+		} else if (msg.type == "event") { // Chat event received
+			api.getThreadInfo(msg.threadID, (err, tinfo) => {
+				// Log the event information and reset the prompt
+				newPrompt(`${colored(`[${tinfo.name}] ${msg.logMessageBody}`, "fgyellow")}`, rl);
 			});
 		}
 	});
