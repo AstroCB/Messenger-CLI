@@ -2,6 +2,7 @@
 const login = require("facebook-chat-api");
 const fs = require("fs");
 const readline = require("readline");
+const notifier = require('node-notifier');
 // Internal colors module for Terminal output'
 const colored = require("./colors").colorString;
 // Global access variables
@@ -90,6 +91,11 @@ function main(api) {
 
 					// Log the incoming message and reset the prompt
 					newPrompt(`${colored(uinfo[msg.senderID].firstName, "fgblue")} in ${colored(tinfo.name, "fggreen")} ${atext}`, rl);
+					// Show up the notification for the new incoming message
+					notifier.notify({
+						title: 'Messenger CLI',
+						message: 'You have unread messages from: ' + uinfo[msg.senderID].firstName
+					});
 				});
 			});
 		} else if (msg.type == "event") { // Chat event received
