@@ -94,7 +94,7 @@ function main(api) {
 					// Show up the notification for the new incoming message
 					notifier.notify({
 						title: 'Messenger CLI',
-						message: 'You have unread messages from: ' + uinfo[msg.senderID].firstName
+						message: `You have unread messages from: ' ${uinfo[msg.senderID].firstName}`
 					});
 				});
 			});
@@ -119,21 +119,48 @@ function main(api) {
 			}
 		} else {
 			// Search for the group specified in the message
-			const search = line.substring(0, terminator);
-			getGroup(search, (err, group) => {
-				if (!err) {
-					// Send message to matched group
-					sendReplacedMessage(line.substring(terminator + 1), group, rl);
-
-					// Store the information of the last recipient so you don't have to specify it again
-					active = group;
-
-					// Update the prompt to indicate where messages are being sent by default
-					rl.setPrompt(colored(`[${active.name}] `, "fggreen"));
-				} else {
-					logError(err);
-				}
-			});
+			const cmd = line.substring(0, terminator);
+			if(cmd == "load") {
+				const search = line.substring(terminator + 1);
+				getGroup(search, (err, group) => {
+					if (!err) {
+						// Store the information of the last recipient so you don't have to specify it again
+						active = group;
+						// Load older 10 messages
+						api.getThreadHistory(group.threadID, 10, undefined, (err, history) => {
+							if(!err) {
+								for(let i = 0; i < history.length; i++) {
+									console.log(`${colored(history[i].senderName, "fggreen")}: ${history[i].body}`);
+								}
+								rl.setPrompt(colored(`[${active.name}] `, "fggreen"));						
+								timestamp = history[0].timestamp;
+							}
+							else {
+								logError(err);
+							}
+						});
+						// Update the prompt to indicate where messages are being sent by default
+					} else {
+						logError(err);
+					}
+				});
+			}
+			else {
+				getGroup(cmd, (err, group) => {
+					if (!err) {
+						// Send message to matched group
+						sendReplacedMessage(line.substring(terminator + 1), group, rl);
+	
+						// Store the information of the last recipient so you don't have to specify it again
+						active = group;
+	
+						// Update the prompt to indicate where messages are being sent by default
+						rl.setPrompt(colored(`[${active.name}] `, "fggreen"));
+					} else {
+						logError(err);
+					}
+				});
+			}
 		}
 	});
 }
