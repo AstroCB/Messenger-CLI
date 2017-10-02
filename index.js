@@ -94,7 +94,7 @@ function main(api) {
 					// Show up the notification for the new incoming message
 					notifier.notify({
 						title: 'Messenger CLI',
-						message: `You have unread messages from: ' ${uinfo[msg.senderID].firstName}`
+						message: `You have unread messages from: ${uinfo[msg.senderID].firstName}`
 					});
 				});
 			});
