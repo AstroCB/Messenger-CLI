@@ -2,9 +2,11 @@
 const login = require("facebook-chat-api");
 const fs = require("fs");
 const readline = require("readline");
-const notifier = require('node-notifier');
+const notifier = require("node-notifier");
+
 // Internal colors module for Terminal output'
 const colored = require("./colors").colorString;
+
 // Global access variables
 let gapi, active, rl;
 
@@ -82,7 +84,7 @@ function main(api) {
 
 	// Listen to the stream of incoming messages and log them as they arrive
 	api.listen((err, msg) => {
-		if(msg.type == "message") { // Message received
+		if (msg.type == "message") { // Message received
 			api.getThreadInfo(msg.threadID, (err, tinfo) => {
 				api.getUserInfo(msg.senderID, (err, uinfo) => {
 					// If there are attachments, grab their URLs to render them as text instead
@@ -94,7 +96,7 @@ function main(api) {
 					// Show up the notification for the new incoming message
 					notifier.notify({
 						title: 'Messenger CLI',
-						message: `You have unread messages from: ${uinfo[msg.senderID].firstName}`
+						message: `New message from ${tinfo.name}`
 					});
 				});
 			});
@@ -119,8 +121,8 @@ function main(api) {
 			}
 		} else {
 			// Search for the group specified in the message
-			const cmd = line.substring(0, terminator);
-			if(cmd == "load") {
+			const search = line.substring(0, terminator);
+			if (search == "load") {
 				const search = line.substring(terminator + 1);
 				getGroup(search, (err, group) => {
 					if (!err) {
@@ -128,8 +130,8 @@ function main(api) {
 						active = group;
 						// Load older 10 messages
 						api.getThreadHistory(group.threadID, 10, undefined, (err, history) => {
-							if(!err) {
-								for(let i = 0; i < history.length; i++) {
+							if (!err) {
+								for (let i = 0; i < history.length; i++) {
 									console.log(`${colored(history[i].senderName, "fggreen")}: ${history[i].body}`);
 								}
 								rl.setPrompt(colored(`[${active.name}] `, "fggreen"));						
@@ -144,9 +146,8 @@ function main(api) {
 						logError(err);
 					}
 				});
-			}
-			else {
-				getGroup(cmd, (err, group) => {
+			} else {
+				getGroup(search, (err, group) => {
 					if (!err) {
 						// Send message to matched group
 						sendReplacedMessage(line.substring(terminator + 1), group, rl);
@@ -265,7 +266,7 @@ function parseAndReplace(msg, groupInfo, api = gapi) {
 			"replacement": "",
 			"func": (groupInfo, api) => {
 				api.markAsRead(groupInfo.threadID, (err) => {
-					if(!err) { newPrompt(colored("(read)", "bgblue"), rl); }
+					if (!err) { newPrompt(colored("(read)", "bgblue"), rl); }
 				});
 			}
 		},
@@ -278,7 +279,7 @@ function parseAndReplace(msg, groupInfo, api = gapi) {
 					"emoji": groupInfo.emoji ? groupInfo.emoji.emoji : "👍 ",
 					"emojiSize": "large"
 				}, groupInfo.threadID, (err) => {
-					if(!err) { newPrompt(colored("(emoji)", "bgyellow"), rl); }
+					if (!err) { newPrompt(colored("(emoji)", "bgyellow"), rl); }
 				});
 			}
 		},
@@ -304,7 +305,7 @@ function parseAndReplace(msg, groupInfo, api = gapi) {
 	for (let i = 0; i < fixes.length; i++) {
 		// Look for a match; if found, call the function if it exists
 		let fix = fixes[i];
-		if(msg.search(fix.match) > -1 && fix.func) {
+		if (msg.search(fix.match) > -1 && fix.func) {
 			fix.func(groupInfo, api, msg.match(fix.match));
 		}
 		// Make the replacements as necessary
