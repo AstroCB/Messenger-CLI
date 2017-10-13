@@ -1,6 +1,6 @@
 # Messenger-CLI
 
-Messenger-CLI (MCLI) provides a way to access Facebook Messenger from the command line. You can send and receive messages in both group chats and direct messages.
+Messenger-CLI (MCLI) provides a way to access Facebook Messenger from the command line. You can send and receive messages with notifications in both group chats and direct messages.
 
 It was written using [Node.js](https://nodejs.org) and [Facebook Chat API](https://github.com/Schmavery/facebook-chat-api).
 
@@ -21,6 +21,13 @@ For the first message you send, you will have to explicitly specify the recipien
 MCLI will search your 20 most recent threads (configurable) for a chat name (for group chats) or a person's name (for one-on-one chats) that matches `Recipient`. After the first message is sent, you can simply continue to type new messages and they will be sent to the last recipient specified.
 
 To send a message to someone else, simply specify a new recipient using the same syntax shown above.
+
+```
+> load: groupname/username
+```
+
+MCLI will search your 20 most recent threads (configurable) for a chat name (for group chats) or a person's name (for one-on-one chats) that matches `groupname/username`. Then it will load the latest 10 messages, you can simply continue to type new messages and they will be sent to that specified groupname or username.
+
 
 ## Special commands
 Below are a list of commands that, when included in messages, will not appear in the final text sent to the recipient, but will influence the behavior of the chat in some way.
