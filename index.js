@@ -122,7 +122,27 @@ function main(api) {
 		} else {
 			// Search for the group specified in the message
 			const search = line.substring(0, terminator);
-			if (search == "load") {
+			// Beginning of list function. Use: list:(number) Lists the latest (number) friends and the most recent message sent or recieved in the chat.
+			if (search == "list") {
+				const amount = line.substring(terminator + 1);
+				api.getThreadList(0, amount, "inbox", (err, threads) => {
+					if (!err) {
+						for (let i = 0; i < threads.length; i++) {
+							const id = threads[i].threadID;
+							api.getThreadInfo(id, (err, info) => {
+								api.getThreadHistory(id, 1, undefined, (err, history) => {
+									console.log(colored(info.name, "fggreen"));
+									for (let i = 0; i < history.length; i++) {
+										console.log(`${colored(history[i].senderName, "fgblue")}: ${history[i].body}`);
+                                                                        }
+								});
+							});
+						}
+					} else {
+						callback(err);
+					}
+				});
+                        } else if (search == "load") {
 				const search = line.substring(terminator + 1);
 				getGroup(search, (err, group) => {
 					if (!err) {
