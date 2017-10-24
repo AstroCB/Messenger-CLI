@@ -3,6 +3,7 @@ const login = require("facebook-chat-api");
 const fs = require("fs");
 const readline = require("readline");
 const notifier = require("node-notifier");
+const onlineFriends = []
 
 // Internal colors module for Terminal output'
 const colored = require("./colors").colorString;
@@ -74,7 +75,7 @@ function initPrompt() {
 */
 function main(api) {
 	// Use minimal logging from the API
-	api.setOptions({ "logLevel": "warn", "listenEvents": true });
+	api.setOptions({ "logLevel": "warn", "listenEvents": true});
 	// Initialize the global API object
 	gapi = api;
 
@@ -105,6 +106,15 @@ function main(api) {
 				// Log the event information and reset the prompt
 				newPrompt(`${colored(`[${tinfo.name}] ${msg.logMessageBody}`, "fgyellow")}`, rl);
 			});
+		} else if (msg.type == "typ") {
+			if (msg.isTyping) {
+			api.getUserInfo(msg.from, (err, user) => {
+				var friendTyp = user[msg.from].firstName 
+				newPrompt(`${colored(`${friendTyp} ${'is typing...'}`, "dim")}`, rl);
+				// newPrompt((colored(friendTyp, "dim"), colored('is typing...', "dim")), rl);
+			
+			});
+		}
 		}
 	});
 
@@ -122,7 +132,7 @@ function main(api) {
 		} else {
 			// Search for the group specified in the message
 			const search = line.substring(0, terminator);
-			//Beginning of list function. Use: list:(number) Lists the latest (number) friends and the most recent message sent or recieved in the chat.
+			// Beginning of list function. Use: list:(number) Lists the latest (number) friends and the most recent message sent or recieved in the chat.
 			if (search == "list") {
 				const amount = line.substring(terminator + 1);
 				api.getThreadList(0, amount, "inbox", (err, threads) => {
@@ -131,20 +141,18 @@ function main(api) {
 							const id = threads[i].threadID;
 							api.getThreadInfo(id, (err, info) => {
 								api.getThreadHistory(id, 1, undefined, (err, history) => {
-									console.log(colored(info.name, "fggreen"))
-									for (let i = 0; i < history.length; i++)
+									console.log(colored(info.name, "fggreen"));
+									for (let i = 0; i < history.length; i++) {
 										console.log(`${colored(history[i].senderName, "fgblue")}: ${history[i].body}`);
-								}
-							)
+                                                                        }
+								});
 							});
 						}
 					} else {
 						callback(err);
 					}
 				});
-						}
-			//end of List function.
-			else if (search == "load") {
+            	} else if (search == "load") {
 				const search = line.substring(terminator + 1);
 				getGroup(search, (err, group) => {
 					if (!err) {
