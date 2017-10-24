@@ -3,7 +3,6 @@ const login = require("facebook-chat-api");
 const fs = require("fs");
 const readline = require("readline");
 const notifier = require("node-notifier");
-const onlineFriends = []
 
 // Internal colors module for Terminal output'
 const colored = require("./colors").colorString;
@@ -75,7 +74,7 @@ function initPrompt() {
 */
 function main(api) {
 	// Use minimal logging from the API
-	api.setOptions({ "logLevel": "warn", "listenEvents": true});
+	api.setOptions({ "logLevel": "warn", "listenEvents": true });
 	// Initialize the global API object
 	gapi = api;
 
@@ -106,15 +105,14 @@ function main(api) {
 				// Log the event information and reset the prompt
 				newPrompt(`${colored(`[${tinfo.name}] ${msg.logMessageBody}`, "fgyellow")}`, rl);
 			});
-		} else if (msg.type == "typ") {
-			if (msg.isTyping) {
-			api.getUserInfo(msg.from, (err, user) => {
+		} else if (msg.type == "typ") { // Typing event received
+			if (msg.isTyping) { // Only act if isTyping is true, not false
+			api.getUserInfo(msg.from, (err, user) => {  
 				var friendTyp = user[msg.from].firstName 
+				// Log who is typing and reset the prompt
 				newPrompt(`${colored(`${friendTyp} ${'is typing...'}`, "dim")}`, rl);
-				// newPrompt((colored(friendTyp, "dim"), colored('is typing...', "dim")), rl);
-			
-			});
-		}
+				});
+			}
 		}
 	});
 
@@ -152,7 +150,7 @@ function main(api) {
 						callback(err);
 					}
 				});
-            	} else if (search == "load") {
+                        } else if (search == "load") {
 				const search = line.substring(terminator + 1);
 				getGroup(search, (err, group) => {
 					if (!err) {
@@ -360,4 +358,3 @@ function newPrompt(msg, rl) {
 	// Replace the prompt
 	rl.prompt();
 }
-
