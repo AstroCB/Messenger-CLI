@@ -3,9 +3,7 @@ const login = require("facebook-chat-api");
 const fs = require("fs");
 const readline = require("readline");
 const notifier = require("node-notifier");
-
-// Internal colors module for Terminal output'
-const chalk = require('chalk')
+const chalk = require('chalk');
 
 // Global access variables
 let gapi, active, rl;
@@ -92,7 +90,7 @@ function main(api) {
 					const atext = atts.length > 0 ? `${msg.body} [${atts.join(", ")}]` : msg.body;
 
 					// Log the incoming message and reset the prompt
-					newPrompt(`${chalk.blue(uinfo[msg.senderID.firstname])} in ${chalk.green(tinfo.name)} ${atext}`, rl);
+					newPrompt(`${chalk.blue(uinfo[msg.senderID].firstName)} in ${chalk.green(tinfo.name)} ${atext}`, rl);
 					// Show up the notification for the new incoming message
 					notifier.notify({
 						title: 'Messenger CLI',
@@ -103,15 +101,17 @@ function main(api) {
 		} else if (msg.type == "event") { // Chat event received
 			api.getThreadInfo(msg.threadID, (err, tinfo) => {
 				// Log the event information and reset the prompt
-				newPrompt(`${chalk.yellow(`[${tinfo.name}] ${msg.logMessageBody}`)}`, rl)
+				newPrompt(`${chalk.yellow(`[${tinfo.name}] ${msg.logMessageBody}`)}`, rl);
 			});
 		} else if (msg.type == "typ") { // Typing event received
 			if (msg.isTyping) { // Only act if isTyping is true, not false
-			api.getUserInfo(msg.from, (err, user) => {  
-				var friendTyp = user[msg.from].firstName 
-				// Log who is typing and reset the prompt
-				newPrompt(`${chalk.dim(`${friendTyp} ${'is typing...'}`)}`, rl);
-				});
+        api.getThreadInfo(msg.threadID, (err, tinfo) => {
+          api.getUserInfo(msg.from, (err, uinfo) => {  
+            const typer = uinfo[msg.from].firstName;
+            // Log who is typing and reset the prompt
+            newPrompt(`${chalk.dim(`${typer} is typing in ${tinfo.name}...`)}`, rl);
+          });
+        });
 			}
 		}
 	});
@@ -143,7 +143,6 @@ function main(api) {
 									console.log(chalk.cyan.bgMagenta.bold(info.name))
 									for (let i = 0; i < history.length; i++) {
 										console.log(`${chalk.blue(history[i].senderName)}: ${history[i].body}`);
-                                                                        }
 								});
 							});
 						}
