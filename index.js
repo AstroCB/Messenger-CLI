@@ -3,9 +3,7 @@ const login = require("facebook-chat-api");
 const fs = require("fs");
 const readline = require("readline");
 const notifier = require("node-notifier");
-
-// Internal colors module for Terminal output'
-const colored = require("./colors").colorString;
+const chalk = require('chalk');
 
 // Global access variables
 let gapi, active, rl;
@@ -92,7 +90,7 @@ function main(api) {
 					const atext = atts.length > 0 ? `${msg.body} [${atts.join(", ")}]` : msg.body;
 
 					// Log the incoming message and reset the prompt
-					newPrompt(`${colored(uinfo[msg.senderID].firstName, "fgblue")} in ${colored(tinfo.name, "fggreen")} ${atext}`, rl);
+					newPrompt(`${chalk.blue(uinfo[msg.senderID].firstName)} in ${chalk.green(tinfo.name)} ${atext}`, rl);
 					// Show up the notification for the new incoming message
 					notifier.notify({
 						title: 'Messenger CLI',
@@ -103,12 +101,23 @@ function main(api) {
 		} else if (msg.type == "event") { // Chat event received
 			api.getThreadInfo(msg.threadID, (err, tinfo) => {
 				// Log the event information and reset the prompt
-				newPrompt(`${colored(`[${tinfo.name}] ${msg.logMessageBody}`, "fgyellow")}`, rl);
+				newPrompt(`${chalk.yellow(`[${tinfo.name}] ${msg.logMessageBody}`)}`, rl);
 			});
+		} else if (msg.type == "typ") { // Typing event received
+			if (msg.isTyping) { // Only act if isTyping is true, not false
+        api.getThreadInfo(msg.threadID, (err, tinfo) => {
+          api.getUserInfo(msg.from, (err, uinfo) => {  
+            const typer = uinfo[msg.from].firstName;
+            // Log who is typing and reset the prompt
+            newPrompt(`${chalk.dim(`${typer} is typing in ${tinfo.name}...`)}`, rl);
+          });
+        });
+			}
 		}
 	});
 
 	// Watch stdin for new messages (terminated by newlines)
+	
 	rl.on("line", (line) => {
 		const terminator = line.indexOf(":");
 		if (terminator == -1) {
@@ -131,10 +140,9 @@ function main(api) {
 							const id = threads[i].threadID;
 							api.getThreadInfo(id, (err, info) => {
 								api.getThreadHistory(id, 1, undefined, (err, history) => {
-									console.log(colored(info.name, "fggreen"));
+									console.log(chalk.cyan.bgMagenta.bold(info.name))
 									for (let i = 0; i < history.length; i++) {
-										console.log(`${colored(history[i].senderName, "fgblue")}: ${history[i].body}`);
-                                                                        }
+										console.log(`${chalk.blue(history[i].senderName)}: ${history[i].body}`);
 								});
 							});
 						}
@@ -152,9 +160,9 @@ function main(api) {
 						api.getThreadHistory(group.threadID, 10, undefined, (err, history) => {
 							if (!err) {
 								for (let i = 0; i < history.length; i++) {
-									console.log(`${colored(history[i].senderName, "fggreen")}: ${history[i].body}`);
+									console.log(`${chalk.green(history[i].senderName)}: ${history[i].body}`);
 								}
-								rl.setPrompt(colored(`[${active.name}] `, "fggreen"));						
+								rl.setPrompt(chalk.green(`[${active.name}] `));						
 								timestamp = history[0].timestamp;
 							}
 							else {
@@ -176,7 +184,7 @@ function main(api) {
 						active = group;
 	
 						// Update the prompt to indicate where messages are being sent by default
-						rl.setPrompt(colored(`[${active.name}] `, "fggreen"));
+						rl.setPrompt(chalk.green(`[${active.name}] `));
 					} else {
 						logError(err);
 					}
@@ -196,7 +204,7 @@ function main(api) {
 function sendMessage(msg, threadId, rl, callback = () => { }, api = gapi) {
 	api.sendMessage(msg, threadId, (err) => {
 		if (!err) {
-			newPrompt(colored("(sent)", "bggreen"), rl);
+			newPrompt(chalk.red.bgGreen("(sent)"), rl);
 		} else {
 			logError("(not sent)");
 		}
@@ -210,7 +218,7 @@ function sendMessage(msg, threadId, rl, callback = () => { }, api = gapi) {
 	Logs the specified error (`err`) in red to stdout.
 */
 function logError(err) {
-	console.log(colored(err, "bgred"));
+	console.log(chalk.bgRed(err));
 }
 
 /*
@@ -286,7 +294,7 @@ function parseAndReplace(msg, groupInfo, api = gapi) {
 			"replacement": "",
 			"func": (groupInfo, api) => {
 				api.markAsRead(groupInfo.threadID, (err) => {
-					if (!err) { newPrompt(colored("(read)", "bgblue"), rl); }
+					if (!err) { newPrompt(chalk.bgBlue("(read)"), rl); }
 				});
 			}
 		},
@@ -299,7 +307,7 @@ function parseAndReplace(msg, groupInfo, api = gapi) {
 					"emoji": groupInfo.emoji ? groupInfo.emoji.emoji : "👍 ",
 					"emojiSize": "large"
 				}, groupInfo.threadID, (err) => {
-					if (!err) { newPrompt(colored("(emoji)", "bgyellow"), rl); }
+					if (!err) { newPrompt(chalk.bgYellow("(emoji)"), rl); }
 				});
 			}
 		},
@@ -313,7 +321,7 @@ function parseAndReplace(msg, groupInfo, api = gapi) {
 					"attachment": fs.createReadStream(path)
 				}, groupInfo.threadID, (err) => {
 					if (!err) {
-						newPrompt(colored("(image)", "bgcyan"), rl);
+						newPrompt(chalk.bgCyan("(image)"), rl);
 					} else {
 						logError(`File not found at path ${path}`);
 					}
@@ -348,6 +356,5 @@ function newPrompt(msg, rl) {
 	console.log(msg);
 
 	// Replace the prompt
-	rl.prompt();
+	rl.prompt(true);
 }
-
