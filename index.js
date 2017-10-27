@@ -117,6 +117,7 @@ function main(api) {
 	});
 
 	// Watch stdin for new messages (terminated by newlines)
+	
 	rl.on("line", (line) => {
 		const terminator = line.indexOf(":");
 		if (terminator == -1) {
@@ -356,5 +357,5 @@ function newPrompt(msg, rl) {
 	console.log(msg);
 
 	// Replace the prompt
-	rl.prompt();
+	rl.prompt(true);
 }
