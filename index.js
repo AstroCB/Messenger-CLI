@@ -105,19 +105,19 @@ function main(api) {
 			});
 		} else if (msg.type == "typ") { // Typing event received
 			if (msg.isTyping) { // Only act if isTyping is true, not false
-        api.getThreadInfo(msg.threadID, (err, tinfo) => {
-          api.getUserInfo(msg.from, (err, uinfo) => {  
-            const typer = uinfo[msg.from].firstName;
-            // Log who is typing and reset the prompt
-            newPrompt(`${chalk.dim(`${typer} is typing in ${tinfo.name}...`)}`, rl);
-          });
-        });
+				api.getThreadInfo(msg.threadID, (err, tinfo) => {
+					api.getUserInfo(msg.from, (err, uinfo) => {
+						const typer = uinfo[msg.from].firstName;
+						// Log who is typing and reset the prompt
+						newPrompt(`${chalk.dim(`${typer} is typing in ${tinfo.name}...`)}`, rl);
+					});
+				});
 			}
 		}
 	});
 
 	// Watch stdin for new messages (terminated by newlines)
-	
+
 	rl.on("line", (line) => {
 		const terminator = line.indexOf(":");
 		if (terminator == -1) {
@@ -143,6 +143,7 @@ function main(api) {
 									console.log(chalk.cyan.bgMagenta.bold(info.name))
 									for (let i = 0; i < history.length; i++) {
 										console.log(`${chalk.blue(history[i].senderName)}: ${history[i].body}`);
+									}
 								});
 							});
 						}
@@ -150,7 +151,7 @@ function main(api) {
 						callback(err);
 					}
 				});
-                        } else if (search == "load") {
+			} else if (search == "load") {
 				const search = line.substring(terminator + 1);
 				getGroup(search, (err, group) => {
 					if (!err) {
@@ -162,7 +163,7 @@ function main(api) {
 								for (let i = 0; i < history.length; i++) {
 									console.log(`${chalk.green(history[i].senderName)}: ${history[i].body}`);
 								}
-								rl.setPrompt(chalk.green(`[${active.name}] `));						
+								rl.setPrompt(chalk.green(`[${active.name}] `));
 								timestamp = history[0].timestamp;
 							}
 							else {
@@ -179,10 +180,10 @@ function main(api) {
 					if (!err) {
 						// Send message to matched group
 						sendReplacedMessage(line.substring(terminator + 1), group, rl);
-	
+
 						// Store the information of the last recipient so you don't have to specify it again
 						active = group;
-	
+
 						// Update the prompt to indicate where messages are being sent by default
 						rl.setPrompt(chalk.green(`[${active.name}] `));
 					} else {
@@ -260,7 +261,7 @@ function sendReplacedMessage(message, groupInfo, rl) {
 
 	// parseAndReplace may return an empty message after replacement
 	if (msg) {
-		sendMessage(msg, groupInfo.threadID, rl); 
+		sendMessage(msg, groupInfo.threadID, rl);
 	}
 }
 
