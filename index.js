@@ -143,10 +143,7 @@ function main(api) {
 									console.log(chalk.cyan.bgMagenta.bold(info.name));
 									for (let i = 0; i < history.length; i++) {
 										console.log(`${chalk.blue(history[i].senderName)}: ${history[i].body}`);
-<<<<<<< HEAD
 									}
-=======
->>>>>>> 13935cd22ed4ac8bcc1bfaae6bc9759a3e3517c4
 								});
 							});
 						}
