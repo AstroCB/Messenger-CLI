@@ -22,12 +22,7 @@ MCLI will search your 20 most recent threads (configurable) for a chat name (for
 
 To send a message to someone else, simply specify a new recipient using the same syntax shown above.
 
-```
-> load: groupname/username
-```
-
-MCLI will search your 20 most recent threads (configurable) for a chat name (for group chats) or a person's name (for one-on-one chats) that matches `groupname/username`. Then it will load the latest 10 messages, you can simply continue to type new messages and they will be sent to that specified groupname or username.
-
+Alternatively, you can use `load: {recipient}` to load the latest 10 messages from the matching chat.
 
 ## Special commands
 Below are a list of commands that, when included in messages, will not appear in the final text sent to the recipient, but will influence the behavior of the chat in some way.
