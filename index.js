@@ -4,7 +4,7 @@ const fs = require("fs");
 const readline = require("readline");
 const notifier = require("node-notifier");
 const chalk = require('chalk');
-const onlineFriends = []
+var onlineFriends = []
 
 // Global access variables
 let gapi, active, rl;
