@@ -4,6 +4,7 @@ const fs = require("fs");
 const readline = require("readline");
 const notifier = require("node-notifier");
 const chalk = require('chalk');
+const onlineFriends = []
 
 // Global access variables
 let gapi, active, rl;
@@ -72,7 +73,7 @@ function initPrompt() {
 */
 function main(api) {
 	// Use minimal logging from the API
-	api.setOptions({ "logLevel": "warn", "listenEvents": true });
+	api.setOptions({ "logLevel": "warn", "listenEvents": true, "updatePresence":true });
 	// Initialize the global API object
 	gapi = api;
 
@@ -105,13 +106,26 @@ function main(api) {
 			});
 		} else if (msg.type == "typ") { // Typing event received
 			if (msg.isTyping) { // Only act if isTyping is true, not false
-        api.getThreadInfo(msg.threadID, (err, tinfo) => {
-          api.getUserInfo(msg.from, (err, uinfo) => {  
-            const typer = uinfo[msg.from].firstName;
-            // Log who is typing and reset the prompt
-            newPrompt(`${chalk.dim(`${typer} is typing in ${tinfo.name}...`)}`, rl);
-          });
-        });
+				api.getThreadInfo(msg.threadID, (err, tinfo) => {
+					api.getUserInfo(msg.from, (err, uinfo) => {  
+						const typer = uinfo[msg.from].firstName;
+						// Log who is typing and reset the prompt
+						newPrompt(`${chalk.dim(`${typer} is typing in ${tinfo.name}...`)}`, rl);
+					});
+				});
+			}
+		} else if (msg.type == "presence") { // Receive all presence signals from API
+			if (msg.statuses == "0") { // If online is false
+				var off = onlineFriends.indexOf(msg.userID) // Search the onlineFriends array for a userID match
+				if (off != -1) { // Update onlineFriends to reflect a friend who is offline
+					onlineFriends.splice(off, 1)
+				}
+			}
+			else if (msg.statuses == "2") {
+				var on = onlineFriends.indexOf(msg.userID);
+				if (on == -1) {
+					onlineFriends.push(msg.userID);
+				}
 			}
 		}
 	});
@@ -151,7 +165,15 @@ function main(api) {
 						callback(err);
 					}
 				});
-                        } else if (search == "load") {
+			} else if (search == "online") {
+				console.log(chalk.green("Online"));
+				for (let i = 0; i < onlineFriends.length; i++) {
+					api.getUserInfo(onlineFriends[i], (err, ret) => {
+						console.log(`${ret[onlineFriends[i]].name}`);
+					});
+				}
+			 
+			} else if (search == "load") {
 				const search = line.substring(terminator + 1);
 				getGroup(search, (err, group) => {
 					if (!err) {
@@ -175,6 +197,8 @@ function main(api) {
 						logError(err);
 					}
 				});
+			// } else if (search == "logout") { //Add a logout command.
+			// 	api.logout((err, quit()));
 			} else {
 				getGroup(search, (err, group) => {
 					if (!err) {
