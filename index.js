@@ -35,7 +35,7 @@ try {
 
 /*
 	Takes a credentials object with `email` and `password` fields and logs into the Messenger API.
-	
+gc
 	If successful, it stores an appstate to cache the login and passes off the API object to the callback.
 	Otherwise, it will return an error specifying what went wrong and log it to the console.
 */
@@ -66,7 +66,7 @@ function initPrompt() {
 
 /*
 	Main body of the CLI.
-	
+gc
 	Listens for new messages and logs them to stdout. Messages can be sent from
 	stdin using the format described in README.md.
 */
@@ -106,7 +106,8 @@ function main(api) {
 		} else if (msg.type == "typ") { // Typing event received
 			if (msg.isTyping) { // Only act if isTyping is true, not false
 				api.getThreadInfo(msg.threadID, (err, tinfo) => {
-					api.getUserInfo(msg.from, (err, uinfo) => {  
+					api.getUserInfo(msg.from, (err, uinfo) => {
+						gc
 						const typer = uinfo[msg.from].firstName;
 						// Log who is typing and reset the prompt
 						newPrompt(`${chalk.dim(`${typer} is typing in ${tinfo.name}...`)}`, rl);
@@ -180,7 +181,7 @@ function main(api) {
 						console.log("Logged out");
 						process.exit()
 					}
-				}) ;
+				});
 			} else {
 				getGroup(search, (err, group) => {
 					if (!err) {
@@ -237,7 +238,7 @@ function logError(err) {
 */
 function getGroup(query, callback, api = gapi) {
 	const search = new RegExp(query, "i"); // Case insensitive
-	api.getThreadList(0, 100, "inbox", (err, threads) => {   //Increased this amount so I could find older conversations.
+	api.getThreadList(0, 100, "inbox", (err, threads) => {
 		if (!err) {
 			let found = false;
 			for (let i = 0; i < threads.length; i++) {
