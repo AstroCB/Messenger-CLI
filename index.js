@@ -113,9 +113,10 @@ function main(api) {
 					});
 				});
 			}
-		} 
+		}
 	});
-	// Watch stdin for new messages (terminated by newlines	
+
+	// Watch stdin for new messages (terminated by newlines)
 	rl.on("line", (line) => {
 		const terminator = line.indexOf(":");
 		if (terminator == -1) {
@@ -161,7 +162,7 @@ function main(api) {
 								for (let i = 0; i < history.length; i++) {
 									console.log(`${chalk.green(history[i].senderName)}: ${history[i].body}`);
 								}
-								rl.setPrompt(chalk.green(`[${active.name}] `));						
+								rl.setPrompt(chalk.green(`[${active.name}] `));
 								timestamp = history[0].timestamp;
 							}
 							else {
@@ -185,10 +186,10 @@ function main(api) {
 					if (!err) {
 						// Send message to matched group
 						sendReplacedMessage(line.substring(terminator + 1), group, rl);
-	
+
 						// Store the information of the last recipient so you don't have to specify it again
 						active = group;
-	
+
 						// Update the prompt to indicate where messages are being sent by default
 						rl.setPrompt(chalk.green(`[${active.name}] `));
 					} else {
@@ -266,7 +267,7 @@ function sendReplacedMessage(message, groupInfo, rl) {
 
 	// parseAndReplace may return an empty message after replacement
 	if (msg) {
-		sendMessage(msg, groupInfo.threadID, rl); 
+		sendMessage(msg, groupInfo.threadID, rl);
 	}
 }
 
