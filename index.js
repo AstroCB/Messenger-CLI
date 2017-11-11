@@ -72,7 +72,7 @@ function initPrompt() {
 */
 function main(api) {
 	// Use minimal logging from the API
-	api.setOptions({ "logLevel": "warn", "listenEvents": true, "updatePresence":true });
+	api.setOptions({ "logLevel": "warn", "listenEvents": true });
 	// Initialize the global API object
 	gapi = api;
 
