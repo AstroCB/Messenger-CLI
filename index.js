@@ -4,7 +4,6 @@ const fs = require("fs");
 const readline = require("readline");
 const notifier = require("node-notifier");
 const chalk = require('chalk');
-const onlineFriends = []
 
 // Global access variables
 let gapi, active, rl;
@@ -114,24 +113,9 @@ function main(api) {
 					});
 				});
 			}
-		} else if (msg.type == "presence") { // Receive all presence signals from API
-			if (msg.statuses == "0") { // If online is false
-				var off = onlineFriends.indexOf(msg.userID) // Search the onlineFriends array for a userID match
-				if (off != -1) { // Update onlineFriends to reflect a friend who is offline
-					onlineFriends.splice(off, 1)
-				}
-			}
-			else if (msg.statuses == "2") {
-				var on = onlineFriends.indexOf(msg.userID);
-				if (on == -1) {
-					onlineFriends.push(msg.userID);
-				}
-			}
-		}
+		} 
 	});
-
-	// Watch stdin for new messages (terminated by newlines)
-	
+	// Watch stdin for new messages (terminated by newlines	
 	rl.on("line", (line) => {
 		const terminator = line.indexOf(":");
 		if (terminator == -1) {
@@ -165,14 +149,6 @@ function main(api) {
 						callback(err);
 					}
 				});
-			} else if (search == "online") {
-				console.log(chalk.green("Online"));
-				for (let i = 0; i < onlineFriends.length; i++) {
-					api.getUserInfo(onlineFriends[i], (err, ret) => {
-						console.log(`${ret[onlineFriends[i]].name}`);
-					});
-				}
-			 
 			} else if (search == "load") {
 				const search = line.substring(terminator + 1);
 				getGroup(search, (err, group) => {
@@ -197,8 +173,13 @@ function main(api) {
 						logError(err);
 					}
 				});
-			// } else if (search == "logout") { //Add a logout command.
-			// 	api.logout((err, quit()));
+			} else if (search == "logout") { //Add a logout command.
+				api.logout((err) => {
+					if (!err) {
+						console.log("Logged out");
+						process.exit()
+					}
+				}) ;
 			} else {
 				getGroup(search, (err, group) => {
 					if (!err) {
@@ -255,7 +236,7 @@ function logError(err) {
 */
 function getGroup(query, callback, api = gapi) {
 	const search = new RegExp(query, "i"); // Case insensitive
-	api.getThreadList(0, 10, "inbox", (err, threads) => {
+	api.getThreadList(0, 100, "inbox", (err, threads) => {   //Increased this amount so I could find older conversations.
 		if (!err) {
 			let found = false;
 			for (let i = 0; i < threads.length; i++) {
