@@ -106,7 +106,7 @@ function main(api) {
 		} else if (msg.type == "typ") { // Typing event received
 			if (msg.isTyping) { // Only act if isTyping is true, not false
 				api.getThreadInfo(msg.threadID, (err, tinfo) => {
-					api.getUserInfo(msg.from, (err, uinfo) => {
+					api.getUserInfo(msg.from, (err, uinfo) => {  
 						const typer = uinfo[msg.from].firstName;
 						// Log who is typing and reset the prompt
 						newPrompt(`${chalk.dim(`${typer} is typing in ${tinfo.name}...`)}`, rl);
@@ -117,7 +117,6 @@ function main(api) {
 	});
 
 	// Watch stdin for new messages (terminated by newlines)
-
 	rl.on("line", (line) => {
 		const terminator = line.indexOf(":");
 		if (terminator == -1) {
@@ -140,7 +139,7 @@ function main(api) {
 							const id = threads[i].threadID;
 							api.getThreadInfo(id, (err, info) => {
 								api.getThreadHistory(id, 1, undefined, (err, history) => {
-									console.log(chalk.cyan.bgMagenta.bold(info.name))
+									console.log(chalk.cyan.bgMagenta.bold(info.name));
 									for (let i = 0; i < history.length; i++) {
 										console.log(`${chalk.blue(history[i].senderName)}: ${history[i].body}`);
 									}
@@ -175,6 +174,13 @@ function main(api) {
 						logError(err);
 					}
 				});
+			} else if (search == "logout") { //Add a logout command.
+				api.logout((err) => {
+					if (!err) {
+						console.log("Logged out");
+						process.exit()
+					}
+				}) ;
 			} else {
 				getGroup(search, (err, group) => {
 					if (!err) {
@@ -231,7 +237,7 @@ function logError(err) {
 */
 function getGroup(query, callback, api = gapi) {
 	const search = new RegExp(query, "i"); // Case insensitive
-	api.getThreadList(0, 10, "inbox", (err, threads) => {
+	api.getThreadList(0, 100, "inbox", (err, threads) => {   //Increased this amount so I could find older conversations.
 		if (!err) {
 			let found = false;
 			for (let i = 0; i < threads.length; i++) {
