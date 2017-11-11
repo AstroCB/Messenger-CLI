@@ -4,6 +4,8 @@ const fs = require("fs");
 const readline = require("readline");
 const notifier = require("node-notifier");
 const chalk = require('chalk');
+const path = require('path');
+const prompt = require('prompt');
 
 // Global access variables
 let gapi, active, rl;
@@ -18,17 +20,48 @@ try {
 		const credentials = require("./credentials");
 		logInWithCredentials(credentials);
 	} catch (e) {
-		// If none found, ask for them
-		initPrompt();
-		rl.question("What's your Facebook email? ", (email) => {
-			rl.question("What's your Facebook password? ", (pass) => {
+		let email, pass;
+		let promptSchema = {
+			properties: {
+				email: {
+					description: "What's your Facebook email?",
+					message: 'Email is required',
+					required: true
+				},
+				password: {
+					description: "What's your Facebook password?",
+					message: 'Password is required',					
+					required: true,
+					hidden: true,
+					replace: '*'
+				}
+			}
+		};
+		// Change the default setting to make it look the same as old prompt
+		prompt.message = "";
+		prompt.delimiter = "";		
+		// Start the prompt
+		prompt.start();
+		// Get the user input with validation and masking for password
+		prompt.get(promptSchema, (err, result) => {
+			if (!err) {
+				email = result.email;
+				pass = result.password;
+
 				// Store credentials for next time
 				fs.writeFileSync("credentials.js", `exports.email = "${email}";\nexports.password = "${pass}";`);
-
+				
 				// Pass to the login method (which should store an appstate as well)
 				const credentials = require("./credentials");
 				logInWithCredentials(credentials);
-			});
+			}
+			else {
+				logError(err);
+			}
+
+			// If none found, ask for them
+			/** This should not be moved above the prompt for email and password as it causes double input read for a character **/
+			initPrompt();		
 		});
 	}
 }
@@ -94,7 +127,8 @@ function main(api) {
 					// Show up the notification for the new incoming message
 					notifier.notify({
 						title: 'Messenger CLI',
-						message: `New message from ${tinfo.name}`
+						message: `New message from ${tinfo.name}`,
+						icon: path.resolve(__dirname, 'assets', 'images', 'messenger-icon.png')
 					});
 				});
 			});

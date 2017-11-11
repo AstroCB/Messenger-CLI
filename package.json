@@ -9,8 +9,9 @@
   "author": "Cameron Bernhardt (AstroCB)",
   "license": "MIT",
   "dependencies": {
-    "chalk":"^2.3.0",
+    "chalk": "^2.3.0",
     "facebook-chat-api": "^1.4.0",
-    "node-notifier": "^5.1.2"
+    "node-notifier": "^5.1.2",
+    "prompt": "^1.0.0"
   }
 }
