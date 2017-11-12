@@ -68,7 +68,7 @@ try {
 
 /*
 	Takes a credentials object with `email` and `password` fields and logs into the Messenger API.
-	
+gc
 	If successful, it stores an appstate to cache the login and passes off the API object to the callback.
 	Otherwise, it will return an error specifying what went wrong and log it to the console.
 */
@@ -99,7 +99,7 @@ function initPrompt() {
 
 /*
 	Main body of the CLI.
-	
+gc
 	Listens for new messages and logs them to stdout. Messages can be sent from
 	stdin using the format described in README.md.
 */
@@ -141,6 +141,7 @@ function main(api) {
 			if (msg.isTyping) { // Only act if isTyping is true, not false
 				api.getThreadInfo(msg.threadID, (err, tinfo) => {
 					api.getUserInfo(msg.from, (err, uinfo) => {
+						gc
 						const typer = uinfo[msg.from].firstName;
 						// Log who is typing and reset the prompt
 						newPrompt(`${chalk.dim(`${typer} is typing in ${tinfo.name}...`)}`, rl);
@@ -151,7 +152,6 @@ function main(api) {
 	});
 
 	// Watch stdin for new messages (terminated by newlines)
-
 	rl.on("line", (line) => {
 		const terminator = line.indexOf(":");
 		if (terminator == -1) {
@@ -174,7 +174,7 @@ function main(api) {
 							const id = threads[i].threadID;
 							api.getThreadInfo(id, (err, info) => {
 								api.getThreadHistory(id, 1, undefined, (err, history) => {
-									console.log(chalk.cyan.bgMagenta.bold(info.name))
+									console.log(chalk.cyan.bgMagenta.bold(info.name));
 									for (let i = 0; i < history.length; i++) {
 										console.log(`${chalk.blue(history[i].senderName)}: ${history[i].body}`);
 									}
@@ -207,6 +207,13 @@ function main(api) {
 						// Update the prompt to indicate where messages are being sent by default
 					} else {
 						logError(err);
+					}
+				});
+			} else if (search == "logout") { //Add a logout command.
+				api.logout((err) => {
+					if (!err) {
+						console.log("Logged out");
+						process.exit()
 					}
 				});
 			} else {
@@ -265,7 +272,7 @@ function logError(err) {
 */
 function getGroup(query, callback, api = gapi) {
 	const search = new RegExp(query, "i"); // Case insensitive
-	api.getThreadList(0, 10, "inbox", (err, threads) => {
+	api.getThreadList(0, 100, "inbox", (err, threads) => {
 		if (!err) {
 			let found = false;
 			for (let i = 0; i < threads.length; i++) {

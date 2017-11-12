@@ -10,7 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "chalk": "^2.3.0",
-    "facebook-chat-api": "^1.4.0",
+    "facebook-chat-api": "github:Schmavery/facebook-chat-api",
     "node-notifier": "^5.1.2",
     "prompt": "^1.0.0"
   }
