@@ -22,24 +22,24 @@ try {
 	} catch (e) {
 		let email, pass;
 		let promptSchema = {
-			properties: {
-				email: {
-					description: "What's your Facebook email?",
-					message: 'Email is required',
-					required: true
+			"properties": {
+				"email": {
+					"description": "What's your Facebook email?",
+					"message": 'Email is required',
+					"required": true
 				},
-				password: {
-					description: "What's your Facebook password?",
-					message: 'Password is required',					
-					required: true,
-					hidden: true,
-					replace: '*'
+				"password": {
+					"description": "What's your Facebook password?",
+					"message": 'Password is required',
+					"required": true,
+					"hidden": true,
+					"replace": '*'
 				}
 			}
 		};
 		// Change the default setting to make it look the same as old prompt
 		prompt.message = "";
-		prompt.delimiter = "";		
+		prompt.delimiter = "";
 		// Start the prompt
 		prompt.start();
 		// Get the user input with validation and masking for password
@@ -50,7 +50,7 @@ try {
 
 				// Store credentials for next time
 				fs.writeFileSync("credentials.js", `exports.email = "${email}";\nexports.password = "${pass}";`);
-				
+
 				// Pass to the login method (which should store an appstate as well)
 				const credentials = require("./credentials");
 				logInWithCredentials(credentials);
@@ -61,7 +61,7 @@ try {
 
 			// If none found, ask for them
 			/** This should not be moved above the prompt for email and password as it causes double input read for a character **/
-			initPrompt();		
+			initPrompt();
 		});
 	}
 }
@@ -116,35 +116,35 @@ function main(api) {
 	// Listen to the stream of incoming messages and log them as they arrive
 	api.listen((err, msg) => {
 		if (msg.type == "message") { // Message received
-			api.getThreadInfo(msg.threadID, (err, tinfo) => {
+			api.getThreadInfoGraphQL(msg.threadID, (err, tinfo) => {
 				api.getUserInfo(msg.senderID, (err, uinfo) => {
 					// If there are attachments, grab their URLs to render them as text instead
 					const atts = msg.attachments.map((a) => { return a.url || a.facebookUrl; }).filter((a) => { return a; });
 					const atext = atts.length > 0 ? `${msg.body} [${atts.join(", ")}]` : msg.body;
 
 					// Log the incoming message and reset the prompt
-					newPrompt(`${chalk.blue(uinfo[msg.senderID].firstName)} in ${chalk.green(tinfo.name)} ${atext}`, rl);
+					const name = tinfo.threadName || uinfo[msg.senderID].name;
+					newPrompt(`${chalk.blue(uinfo[msg.senderID].firstName)} in ${chalk.green(name)} ${atext}`, rl);
 					// Show up the notification for the new incoming message
 					notifier.notify({
-						title: 'Messenger CLI',
-						message: `New message from ${tinfo.name}`,
-						icon: path.resolve(__dirname, 'assets', 'images', 'messenger-icon.png')
+						"title": 'Messenger CLI',
+						"message": `New message from ${name}`,
+						"icon": path.resolve(__dirname, 'assets', 'images', 'messenger-icon.png')
 					});
 				});
 			});
 		} else if (msg.type == "event") { // Chat event received
-			api.getThreadInfo(msg.threadID, (err, tinfo) => {
+			api.getThreadInfoGraphQL(msg.threadID, (err, tinfo) => {
 				// Log the event information and reset the prompt
-				newPrompt(`${chalk.yellow(`[${tinfo.name}] ${msg.logMessageBody}`)}`, rl);
+				newPrompt(`${chalk.yellow(`[${tinfo.threadName}] ${msg.logMessageBody}`)}`, rl);
 			});
 		} else if (msg.type == "typ") { // Typing event received
 			if (msg.isTyping) { // Only act if isTyping is true, not false
-				api.getThreadInfo(msg.threadID, (err, tinfo) => {
+				api.getThreadInfoGraphQL(msg.threadID, (err, tinfo) => {
 					api.getUserInfo(msg.from, (err, uinfo) => {
-						gc
-						const typer = uinfo[msg.from].firstName;
+						const typer = uinfo[msg.from];
 						// Log who is typing and reset the prompt
-						newPrompt(`${chalk.dim(`${typer} is typing in ${tinfo.name}...`)}`, rl);
+						newPrompt(`${chalk.dim(`${typer.firstName} is typing in ${tinfo.threadName || typer.name}...`)}`, rl);
 					});
 				});
 			}
@@ -172,12 +172,16 @@ function main(api) {
 					if (!err) {
 						for (let i = 0; i < threads.length; i++) {
 							const id = threads[i].threadID;
-							api.getThreadInfo(id, (err, info) => {
-								api.getThreadHistory(id, 1, undefined, (err, history) => {
-									console.log(chalk.cyan.bgMagenta.bold(info.name));
-									for (let i = 0; i < history.length; i++) {
-										console.log(`${chalk.blue(history[i].senderName)}: ${history[i].body}`);
-									}
+							api.getThreadInfoGraphQL(id, (err, tinfo) => {
+								api.getThreadHistoryGraphQL(id, 1, undefined, (err, history) => {
+									api.getUserInfo(tinfo.participantIDs, (err, uinfo) => {
+										console.log(chalk.cyan.bgMagenta.bold(tinfo.threadName));
+										for (let i = 0; i < history.length; i++) {
+											const sender = history[i].senderID;
+											const body = history[i].body;
+											console.log(`${chalk.blue(uinfo[sender].name)}: ${body}`);
+										}
+									});
 								});
 							});
 						}
@@ -277,11 +281,11 @@ function getGroup(query, callback, api = gapi) {
 			let found = false;
 			for (let i = 0; i < threads.length; i++) {
 				const id = threads[i].threadID;
-				api.getThreadInfo(id, (err, info) => {
-					if (!found && !err && info.name.search(search) > -1) {
+				api.getThreadInfoGraphQL(id, (err, info) => {
+					if (!found && !err && info.threadName.search(search) > -1) {
+						found = true;
 						info.threadID = id;
 						callback(null, info);
-						found = true;
 					}
 				});
 			}
