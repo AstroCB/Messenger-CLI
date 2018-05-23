@@ -176,7 +176,7 @@ function main(api) {
 							api.getThreadInfo(id, (err, tinfo) => {
 								api.getThreadHistory(id, 1, undefined, (err, history) => {
 									api.getUserInfo(tinfo.participantIDs, (err, uinfo) => {
-										console.log(chalk.cyan.bgMagenta.bold(tinfo.threadName || uinfo[id].name));
+										console.log(chalk.cyan.bgMagenta.bold(getTitle(tinfo, uinfo)));
 										for (let i = 0; i < history.length; i++) {
 											const sender = history[i].senderID;
 											const body = history[i].body;
