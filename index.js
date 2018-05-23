@@ -116,14 +116,14 @@ function main(api) {
 	// Listen to the stream of incoming messages and log them as they arrive
 	api.listen((err, msg) => {
 		if (msg.type == "message") { // Message received
-			api.getThreadInfoGraphQL(msg.threadID, (err, tinfo) => {
+			api.getThreadInfo(msg.threadID, (err, tinfo) => {
 				api.getUserInfo(msg.senderID, (err, uinfo) => {
 					// If there are attachments, grab their URLs to render them as text instead
-					const atts = msg.attachments.map((a) => { return a.url || a.facebookUrl; }).filter((a) => { return a; });
+					const atts = msg.attachments.map(a => a.url || a.facebookUrl).filter(a => a);
 					const atext = atts.length > 0 ? `${msg.body} [${atts.join(", ")}]` : msg.body;
 
 					// Log the incoming message and reset the prompt
-					const name = tinfo.threadName || uinfo[msg.senderID].name;
+					const name = getTitle(tinfo, uinfo);
 					newPrompt(`${chalk.blue(uinfo[msg.senderID].firstName)} in ${chalk.green(name)} ${atext}`, rl);
 					// Show up the notification for the new incoming message
 					notifier.notify({
@@ -134,17 +134,18 @@ function main(api) {
 				});
 			});
 		} else if (msg.type == "event") { // Chat event received
-			api.getThreadInfoGraphQL(msg.threadID, (err, tinfo) => {
-				// Log the event information and reset the prompt
-				newPrompt(`${chalk.yellow(`[${tinfo.threadName}] ${msg.logMessageBody}`)}`, rl);
+			api.getThreadInfo(msg.threadID, (err, tinfo) => {
+				api.getUserInfo(tinfo.participantIDs, (err, tinfo) => {
+					// Log the event information and reset the prompt
+					newPrompt(`${chalk.yellow(`[${getTitle(tinfo, uinfo)}] ${msg.logMessageBody}`)}`, rl);
+				});
 			});
 		} else if (msg.type == "typ") { // Typing event received
 			if (msg.isTyping) { // Only act if isTyping is true, not false
-				api.getThreadInfoGraphQL(msg.threadID, (err, tinfo) => {
+				api.getThreadInfo(msg.threadID, (err, tinfo) => {
 					api.getUserInfo(msg.from, (err, uinfo) => {
-						const typer = uinfo[msg.from];
 						// Log who is typing and reset the prompt
-						newPrompt(`${chalk.dim(`${typer.firstName} is typing in ${tinfo.threadName || typer.name}...`)}`, rl);
+						newPrompt(`${chalk.dim(`${typer.firstName} is typing in ${getTitle(tinfo, uinfo)}...`)}`, rl);
 					});
 				});
 			}
@@ -168,14 +169,14 @@ function main(api) {
 			// Beginning of list function. Use: list:(number) Lists the latest (number) friends and the most recent message sent or recieved in the chat.
 			if (search == "list") {
 				const amount = line.substring(terminator + 1);
-				api.getThreadList(0, amount, "inbox", (err, threads) => {
+				api.getThreadList(parseInt(amount), null, [], (err, threads) => {
 					if (!err) {
 						for (let i = 0; i < threads.length; i++) {
 							const id = threads[i].threadID;
-							api.getThreadInfoGraphQL(id, (err, tinfo) => {
-								api.getThreadHistoryGraphQL(id, 1, undefined, (err, history) => {
+							api.getThreadInfo(id, (err, tinfo) => {
+								api.getThreadHistory(id, 1, undefined, (err, history) => {
 									api.getUserInfo(tinfo.participantIDs, (err, uinfo) => {
-										console.log(chalk.cyan.bgMagenta.bold(tinfo.threadName));
+										console.log(chalk.cyan.bgMagenta.bold(tinfo.threadName || uinfo[id].name));
 										for (let i = 0; i < history.length; i++) {
 											const sender = history[i].senderID;
 											const body = history[i].body;
@@ -276,17 +277,22 @@ function logError(err) {
 */
 function getGroup(query, callback, api = gapi) {
 	const search = new RegExp(query, "i"); // Case insensitive
-	api.getThreadList(0, 100, "inbox", (err, threads) => {
+	api.getThreadList(100, null, [], (err, threads) => {
 		if (!err) {
 			let found = false;
 			for (let i = 0; i < threads.length; i++) {
 				const id = threads[i].threadID;
-				api.getThreadInfoGraphQL(id, (err, info) => {
-					if (!found && !err && info.threadName.search(search) > -1) {
-						found = true;
-						info.threadID = id;
-						callback(null, info);
-					}
+				api.getThreadInfo(id, (err, tinfo) => {
+					api.getUserInfo(err ? [] : tinfo.participantIDs, (err, uinfo) => {
+						// Check if the chat has a title to search based on
+						const name = getTitle(tinfo, uinfo);
+						if (!found && !err && name.search(search) > -1) {
+							found = true;
+							tinfo.threadID = id;
+							tinfo.name = name;
+							callback(null, tinfo);
+						}
+					});
 				});
 			}
 		} else {
@@ -403,4 +409,31 @@ function newPrompt(msg, rl) {
 
 	// Replace the prompt
 	rl.prompt(true);
+}
+
+/*
+	Determines a title for a chat based on threadInfo and userInfo objects.
+
+	Takes in threadInfo and userInfo objects and returns a string title.
+*/
+function getTitle(tinfo, uinfo, api = gapi) {
+	let name = tinfo.threadName;
+	if (!name) {
+		// If not, figure out who is in the chat other than the main user
+		const others = tinfo.participantIDs.filter(id => (id != api.getCurrentUserID()));
+		if (others.length > 1) {
+			// If it's more than one person, it's an unnamed group
+			// Name it "firstname1/firstname2/firstname3", etc.
+			const names = others.map(id => uinfo[id].firstName);
+			name = names.join("/");
+		} else if (others.length == 1) {
+			// Otherwise, just the two people – it's a PM
+			// Name it the user's full name
+			name = uinfo[others[0]].name;
+		} else {
+			// If len is 0, user is only one in a dead group chat
+			name = "Empty chat";
+		}
+	}
+	return name;
 }
