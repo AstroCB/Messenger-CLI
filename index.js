@@ -114,7 +114,7 @@ function main(api) {
 	rl.prompt();
 
 	// Listen to the stream of incoming messages and log them as they arrive
-	api.listen((err, msg) => {
+	api.listenMqtt((err, msg) => {
 		if (msg.type == "message") { // Message received
 			api.getThreadInfo(msg.threadID, (err, tinfo) => {
 				api.getUserInfo(msg.senderID, (err, uinfo) => {
