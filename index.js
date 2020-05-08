@@ -140,7 +140,7 @@ function main(api) {
 					newPrompt(`${chalk.yellow(`[${getTitle(tinfo, uinfo)}] ${msg.logMessageBody}`)}`, rl);
 				});
 			});
-		} else if (msg.type == "typ") { // Typing event received
+		} else if (msg.type == "type") { // Typing event received
 			if (msg.isTyping) { // Only act if isTyping is true, not false
 				api.getThreadInfo(msg.threadID, (err, tinfo) => {
 					api.getUserInfo(msg.from, (err, uinfo) => {
