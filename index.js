@@ -12,7 +12,12 @@ let gapi, active, rl;
 
 try {
 	// Look for stored appstate first
-	login({ "appState": JSON.parse(fs.readFileSync("appstate.json", "utf8")) }, callback);
+	login({ "appState": JSON.parse(fs.readFileSync("appstate.json", "utf8")) }, (err, api) => {
+		if (err) return console.error(err);
+
+		fs.writeFileSync("appstate.json", JSON.stringify(api.getAppState()));
+		main(api);
+	});
 } catch (e) {
 	// If none found (or expired), log in with email/password
 	try {
@@ -142,9 +147,10 @@ function main(api) {
 			});
 		} else if (msg.type == "typ") { // Typing event received
 			if (msg.isTyping) { // Only act if isTyping is true, not false
-				api.getThreadInfo(msg.threadID, (err, tinfo) => {
-					api.getUserInfo(msg.from, (err, uinfo) => {
+				api.getThreadInfo(msg.threadID, (terr, tinfo) => {
+					api.getUserInfo(msg.from, (uerr, uinfo) => {
 						// Log who is typing and reset the prompt
+						const typer = !uerr ? uinfo[msg.from] : {"firstName": "Someone"};
 						newPrompt(`${chalk.dim(`${typer.firstName} is typing in ${getTitle(tinfo, uinfo)}...`)}`, rl);
 					});
 				});
