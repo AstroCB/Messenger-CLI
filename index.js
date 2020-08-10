@@ -120,6 +120,7 @@ function main(api) {
 
 	// Listen to the stream of incoming messages and log them as they arrive
 	api.listenMqtt((err, msg) => {
+		if (err) { return console.error(`Encountered error receiving messages: ${err}`); }
 		if (msg.type == "message") { // Message received
 			api.getThreadInfo(msg.threadID, (err, tinfo) => {
 				api.getUserInfo(msg.senderID, (err, uinfo) => {
@@ -150,7 +151,7 @@ function main(api) {
 				api.getThreadInfo(msg.threadID, (terr, tinfo) => {
 					api.getUserInfo(msg.from, (uerr, uinfo) => {
 						// Log who is typing and reset the prompt
-						const typer = !uerr ? uinfo[msg.from] : {"firstName": "Someone"};
+						const typer = !uerr ? uinfo[msg.from] : { "firstName": "Someone" };
 						newPrompt(`${chalk.dim(`${typer.firstName} is typing in ${getTitle(tinfo, uinfo)}...`)}`, rl);
 					});
 				});
