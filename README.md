@@ -12,7 +12,7 @@ Once you have a successful login, it will be cached in a file called `appstate.j
 ## Usage
 
 > ### **Note**
-> This is not an official tool, and does not Facebook's official API for Messenger, as the functionality it replicates (emulating a user account) would not be possible with it. Your account may be temporarily or permanently locked for suspicious activity by Facebook – use at your own risk.
+> This is not an official tool, and does not Facebook's official API for Messenger, as the functionality it replicates (emulating a user account) would not be possible with it. While steps are taken to reduce the possibility of this, your account may be temporarily or permanently locked for suspicious activity by Facebook, so use at your own risk.
 
 When your account receives new messages, they will appear onscreen (sent to stdout from wherever you are running the CLI). You can write new messages directly to stdin.
 
