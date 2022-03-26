@@ -11,7 +11,7 @@
   "dependencies": {
     "chalk": "^2.4.1",
     "facebook-chat-api": "github:Schmavery/facebook-chat-api",
-    "minimist": "^0.2.1",
+    "minimist": "^1.2.6",
     "node-notifier": "^8.0.1",
     "prompt": "^1.0.0"
   }
